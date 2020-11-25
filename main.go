@@ -51,6 +51,7 @@ func main() {
 		panic(err.Error())
 	}
 
+	////////// create an empty ConfigMap
 	cm := v1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -63,12 +64,14 @@ func main() {
 		Data: nil,
 	}
 
-	_, err = clientset.CoreV1().ConfigMaps("test").Create(context.Background(), &cm, metav1.CreateOptions{})
+	_, err = clientset.CoreV1().ConfigMaps("test").Create(context.TODO(), &cm, metav1.CreateOptions{})
 	if err != nil {
-		fmt.Errorf("%v", err)
+		fmt.Println("seems to have failed :(")
+		fmt.Errorf("%v", err.Error())
 	} else {
 		fmt.Println("seems to have worked :P")
 	}
+	/////////////////////////////////////
 
 	for {
 		// get pods in all the namespaces by omitting namespace
