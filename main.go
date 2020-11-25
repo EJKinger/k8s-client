@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"time"
 
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -38,6 +39,7 @@ import (
 )
 
 func main() {
+	fmt.Println("hello, this app is working...")
 	// creates the in-cluster config
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -48,6 +50,26 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
+
+	cm := v1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test1",
+			Namespace: "test",
+		},
+		Data: nil,
+	}
+
+	_, err = clientset.CoreV1().ConfigMaps("test").Create(context.Background(), &cm, metav1.CreateOptions{})
+	if err != nil {
+		fmt.Errorf("%v", err)
+	} else {
+		fmt.Println("seems to have worked :P")
+	}
+
 	for {
 		// get pods in all the namespaces by omitting namespace
 		// Or specify namespace to get pods in particular namespace

@@ -14,4 +14,4 @@
 
 FROM debian
 COPY ./app /app
-ENTRYPOINT /app
+ENTRYPOINT /app/k8s-client
