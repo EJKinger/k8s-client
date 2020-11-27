@@ -1,101 +1,80 @@
-/*
-Copyright 2016 The Kubernetes Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-// Note: the example only works with the code within the same release/branch.
 package main
 
 import (
-	"context"
 	"fmt"
 	"time"
 
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	helmv1 "github.com/fluxcd/helm-operator/pkg/apis/helm.fluxcd.io/v1"
+	helmclient "github.com/fluxcd/helm-operator/pkg/client/clientset/versioned/typed/helm.fluxcd.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	//
-	// Uncomment to load all auth plugins
-	// _ "k8s.io/client-go/plugin/pkg/client/auth"
-	//
-	// Or uncomment to load specific auth plugins
-	// _ "k8s.io/client-go/plugin/pkg/client/auth/azure"
-	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	// _ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
-	// _ "k8s.io/client-go/plugin/pkg/client/auth/openstack"
 )
 
 func main() {
 	fmt.Println("hello, this app is working...")
+
 	// creates the in-cluster config
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		panic(err.Error())
-	}
-	// creates the clientset
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
+		fmt.Errorf("Failed 49: %v", err.Error())
 		panic(err.Error())
 	}
 
-	////////// create an empty ConfigMap
-	cm := v1.ConfigMap{
+	// creates the clientset
+	clientset, err := helmclient.NewForConfig(config)
+	if err != nil {
+		fmt.Errorf("Failed 59: %v", err.Error())
+		panic(err.Error())
+	}
+
+	////////// create a test HelmRelease
+	//	---
+	//	apiVersion: helm.fluxcd.io/v1
+	//	kind: HelmRelease
+	//	metadata:
+	//		name: metrics-server
+	//	spec:
+	//		releaseName: metrics-server
+	//		chart:
+	//			repository: https://charts.bitnami.com/bitnami
+	//			name: metrics-server
+	//			version: 4.5.3
+	//		values:
+	//			apiService:
+	//				create: true
+
+	rcs := helmv1.RepoChartSource{
+		RepoURL: "https://charts.bitnami.com/bitnami",
+		Name:    "metrics-server",
+		Version: "4.5.3",
+	}
+
+	hr := helmv1.HelmRelease{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "ConfigMap",
+			Kind:       "HelmRelease",
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test1",
 			Namespace: "test",
 		},
-		Data: nil,
+		Spec: helmv1.HelmReleaseSpec{
+			ReleaseName: "test",
+			ChartSource: helmv1.ChartSource{
+				RepoChartSource: &rcs,
+			},
+		},
 	}
-
-	_, err = clientset.CoreV1().ConfigMaps("test").Create(context.TODO(), &cm, metav1.CreateOptions{})
-	if err != nil {
-		fmt.Println("seems to have failed :(")
-		fmt.Errorf("%v", err.Error())
-	} else {
-		fmt.Println("seems to have worked :P")
-	}
-	/////////////////////////////////////
 
 	for {
-		// get pods in all the namespaces by omitting namespace
-		// Or specify namespace to get pods in particular namespace
-		pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
+		_, err = clientset.HelmReleases("test").Create(&hr)
 		if err != nil {
-			panic(err.Error())
-		}
-		fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
-
-		// Examples for error handling:
-		// - Use helper functions e.g. errors.IsNotFound()
-		// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
-		_, err = clientset.CoreV1().Pods("default").Get(context.TODO(), "example-xxxxx", metav1.GetOptions{})
-		if errors.IsNotFound(err) {
-			fmt.Printf("Pod example-xxxxx not found in default namespace\n")
-		} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
-			fmt.Printf("Error getting pod %v\n", statusError.ErrStatus.Message)
-		} else if err != nil {
-			panic(err.Error())
+			fmt.Println("seems to have failed :(")
+			fmt.Printf("Failed 113: %v\n", err.Error())
 		} else {
-			fmt.Printf("Found example-xxxxx pod in default namespace\n")
+			fmt.Println("seems to have worked :P")
 		}
-
 		time.Sleep(10 * time.Second)
 	}
+
 }
