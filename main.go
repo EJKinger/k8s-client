@@ -16,14 +16,14 @@ func main() {
 	// creates the in-cluster config
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		fmt.Errorf("Failed 49: %v", err.Error())
+		fmt.Printf("Failed to create config: %v", err.Error())
 		panic(err.Error())
 	}
 
 	// creates the clientset
 	clientset, err := helmclient.NewForConfig(config)
 	if err != nil {
-		fmt.Errorf("Failed 59: %v", err.Error())
+		fmt.Printf("Failed to create clientset: %v", err.Error())
 		panic(err.Error())
 	}
 
@@ -69,8 +69,7 @@ func main() {
 	for {
 		_, err = clientset.HelmReleases("test").Create(&hr)
 		if err != nil {
-			fmt.Println("seems to have failed :(")
-			fmt.Printf("Failed 113: %v\n", err.Error())
+			fmt.Printf("Failed to create HelmRelease: %v\n", err.Error())
 		} else {
 			fmt.Println("seems to have worked :P")
 		}
