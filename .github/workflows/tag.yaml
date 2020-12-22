@@ -12,7 +12,6 @@ jobs:
 
     - name: yq
       uses: mikefarah/yq@3.3.0
-    - name: test
       run: yq r Chart.yaml 'version' > VER
 
     - name: Tag
