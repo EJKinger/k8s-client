@@ -10,16 +10,15 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
-    - name: yq
-      uses: mikefarah/yq@3.3.0
-      run: yq r Chart.yaml 'version' > VER
-
     - name: Tag
       run: |
-        yq r Chart.yaml 'version'
-        if git rev-parse $(cat VER) >/dev/null 2>&1; then
-          echo "tag exists, skipping git tag and docker push";
+        snap install yq
+        VER=$(yq r Chart.yaml 'version')
+        if [[ "$VER" == "" ]]; then
+          echo "Chart.yaml version not found, skipping git tag";
+        if git rev-parse $VER >/dev/null 2>&1; then
+          echo "tag exists, skipping git tag";
         else
-          git tag $(cat VER)
-          git push origin $(cat VER)
+          git tag $VER
+          git push origin $VER
         fi
