@@ -16,8 +16,10 @@ jobs:
         VER=$(yq r Chart.yaml 'version')
         if [[ "$VER" == "" ]]; then
           echo "Chart.yaml version not found, skipping git tag";
-        if git rev-parse $VER >/dev/null 2>&1; then
+          exit 1
+        elif git rev-parse $VER >/dev/null 2>&1; then
           echo "tag exists, skipping git tag";
+          exit 1
         else
           git tag $VER
           git push origin $VER
