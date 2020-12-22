@@ -11,7 +11,6 @@ import (
 )
 
 func main() {
-	fmt.Println("hello, this app is working...")
 
 	// creates the in-cluster config
 	config, err := rest.InClusterConfig()
@@ -20,13 +19,39 @@ func main() {
 		panic(err.Error())
 	}
 
-	// creates the clientset
-	clientset, err := helmclient.NewForConfig(config)
+	// creates the helmclient
+	hc, err := helmclient.NewForConfig(config)
 	if err != nil {
-		fmt.Printf("Failed to create clientset: %v", err.Error())
+		fmt.Printf("Failed to create helmclient: %v", err.Error())
 		panic(err.Error())
 	}
 
+	createHelmRelease(config, hc, "test2")
+	createHelmRelease(config, hc, "test3")
+	for {
+		listHelmReleases(config, hc, "test")
+		time.Sleep(10 * time.Second)
+	}
+
+}
+
+func listHelmReleases(c *rest.Config, hc *helmclient.HelmV1Client, ns string) {
+	lo := metav1.ListOptions{
+		LabelSelector: "konghq.com/provisioner-managed",
+	}
+	hrl, err := hc.HelmReleases(ns).List(lo)
+	if err != nil {
+		fmt.Printf("Failed to create HelmRelease: %v\n", err.Error())
+	} else {
+		fmt.Printf("Found %d releases:\n", len(hrl.Items))
+		for _, hr := range hrl.Items {
+			fmt.Printf("Name: %s, Namespace: %s\n", hr.Name, hr.Namespace)
+		}
+
+	}
+}
+
+func createHelmRelease(c *rest.Config, hc *helmclient.HelmV1Client, name string) {
 	////////// create a test HelmRelease
 	//	---
 	//	apiVersion: helm.fluxcd.io/v1
@@ -44,9 +69,9 @@ func main() {
 	//				create: true
 
 	rcs := helmv1.RepoChartSource{
-		RepoURL: "https://charts.bitnami.com/bitnami",
-		Name:    "metrics-server",
-		Version: "4.5.3",
+		RepoURL: "https://charts.test.com",
+		Name:    name,
+		Version: "1.0.0",
 	}
 
 	hr := helmv1.HelmRelease{
@@ -55,25 +80,25 @@ func main() {
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test1",
+			Name:      name,
 			Namespace: "test",
+			Labels: map[string]string{
+				"konghq.com/provisioner-managed": "true",
+			},
 		},
 		Spec: helmv1.HelmReleaseSpec{
-			ReleaseName: "test",
+			ReleaseName: name,
 			ChartSource: helmv1.ChartSource{
 				RepoChartSource: &rcs,
 			},
 		},
 	}
 
-	for {
-		_, err = clientset.HelmReleases("test").Create(&hr)
-		if err != nil {
-			fmt.Printf("Failed to create HelmRelease: %v\n", err.Error())
-		} else {
-			fmt.Println("seems to have worked :P")
-		}
-		time.Sleep(10 * time.Second)
+	_, err := hc.HelmReleases("test").Create(&hr)
+	if err != nil {
+		fmt.Printf("Failed to create HelmRelease: %v\n", err.Error())
+	} else {
+		fmt.Println("seems to have worked :P")
 	}
 
 }

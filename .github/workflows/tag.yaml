@@ -1,0 +1,26 @@
+---
+name: tag
+on:  # yamllint disable-line rule:truthy
+  push:
+    branches: main
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: yq
+      uses: mikefarah/yq@3.3.0
+    - name: test
+      run: yq r Chart.yaml 'version' > VER
+
+    - name: Tag
+      run: |
+        yq r Chart.yaml 'version'
+        if git rev-parse $(cat VER) >/dev/null 2>&1; then
+          echo "tag exists, skipping git tag and docker push";
+        else
+          git tag $(cat VER)
+          git push origin $(cat VER)
+        fi
