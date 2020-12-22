@@ -2,7 +2,7 @@
 name: tag
 on:  # yamllint disable-line rule:truthy
   push:
-    branches: main
+    branches: master
 jobs:
   main:
     runs-on: ubuntu-latest
