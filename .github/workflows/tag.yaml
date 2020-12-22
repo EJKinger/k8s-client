@@ -12,7 +12,7 @@ jobs:
 
     - name: Tag
       run: |
-        snap install yq
+        sudo snap install yq
         VER=$(yq r Chart.yaml 'version')
         if [[ "$VER" == "" ]]; then
           echo "Chart.yaml version not found, skipping git tag";
